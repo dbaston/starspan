@@ -44,6 +44,8 @@ Traverser::Traverser() {
     
 	debug_dump_polys = getenv("STARSPAN_DUMP_POLYS_ON_EXCEPTION") != 0;
 	debug_no_spatial_filter = getenv("STARSPAN_NO_SPATIAL_FILTER") != 0;
+
+        geos_context = OGRGeometry::createGEOSContext();
 }
 
 
@@ -168,6 +170,7 @@ Traverser::~Traverser() {
 		delete[] bandValues_buffer;
 	if ( lineRasterizer )
 		delete lineRasterizer;
+        OGRGeometry::freeGEOSContext(geos_context);
 }
 
 void* Traverser::getBandValuesForPixel(int col, int row, void* buffer) {
@@ -404,9 +407,9 @@ const CoordinateSequenceFactory* global_cs_factory = global_factory->getCoordina
 //
 void Traverser::processPolygon(OGRPolygon* poly) {
 #if GEOS_VERSION_MAJOR <= 3 && GEOS_VERSION_MINOR < 3
-	Polygon* geos_poly = (Polygon*) poly->exportToGEOS();
+	Polygon* geos_poly = (Polygon*) poly->exportToGEOS(geos_context);
 #else 
-	Geometry* geos_geom = (Geometry*) poly->exportToGEOS();
+	Geometry* geos_geom = (Geometry*) poly->exportToGEOS(geos_context);
 	Polygon* geos_poly = dynamic_cast<Polygon*>( geos_geom );
 #endif
 	if ( geos_poly->isValid() ) {
@@ -577,7 +580,7 @@ void Traverser::processGeometry(OGRGeometry* intersection_geometry, bool count) 
 //
 void Traverser::process_feature(OGRFeature* feature) {
 	if ( globalOptions.verbose ) {
-		fprintf(stdout, "\n\nFID: %ld", feature->GetFID());
+		fprintf(stdout, "\n\nFID: %lli", feature->GetFID());
 	}
 	
 	//
@@ -796,7 +799,7 @@ void Traverser::traverse() {
     
     // SQL statement?
     if ( globalOptions.vSelParams.sql.length() > 0 ) {
-        OGRDataSource *poDS = vect->getDataSource();
+        GDALDataset *poDS = vect->getDataSource();
         
 		const char *dialect = 0;
         if ( globalOptions.vSelParams.dialect.length() > 0 ) {
@@ -962,7 +965,7 @@ void Traverser::traverse() {
 	}
     
     if ( releaseLayer ) {
-        OGRDataSource *poDS = vect->getDataSource();
+        GDALDataset *poDS = vect->getDataSource();
         poDS->ReleaseResultSet(layer);
     }
 

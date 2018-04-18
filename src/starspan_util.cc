@@ -248,7 +248,7 @@ OGRLayer* starspan_createLayer(
     }
 
     // get datasource to create layer:
-    OGRDataSource *poDS = outVector->getDataSource();
+    GDALDataset *poDS = outVector->getDataSource();
     
     // get layer definition from the input layer:
     OGRFeatureDefn* inDefn = inLayer->GetLayerDefn();

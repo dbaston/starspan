@@ -13,7 +13,7 @@ int Vector::init() {
 }
 
 int Vector::end() {
-    delete OGRSFDriverRegistrar::GetRegistrar();
+    delete GetGDALDriverManager();
     CPLFinderClean();
 	return 0;
 }
@@ -25,7 +25,7 @@ static void ReportOnLayer(int iLayer, FILE* file, OGRLayer* poLayer) {
 
     fprintf(file, "\nLayer %d: Name: %s\n", iLayer, poDefn->GetName() );
 	fprintf(file, "Geometry: %s\n", OGRGeometryTypeToName(poDefn->GetGeomType()));
-	fprintf(file, "Feature Count: %d\n", poLayer->GetFeatureCount());
+	fprintf(file, "Feature Count: %lli\n", poLayer->GetFeatureCount());
 	
 	OGREnvelope oExt;
 	if (poLayer->GetExtent(&oExt, TRUE) == OGRERR_NONE) {
@@ -80,7 +80,7 @@ static void ReportOnLayer(int iLayer, FILE* file, OGRLayer* poLayer) {
 
 
 Vector* Vector::open(const char* pszDataSource) {
-	OGRDataSource* ds = OGRSFDriverRegistrar::Open(pszDataSource);
+	GDALDataset* ds = static_cast<GDALDataset*>(GDALOpenEx(pszDataSource, GDAL_OF_VECTOR, NULL, NULL, NULL));
     if( ds == NULL ) {
         fprintf(stderr, "Vector::open: Unable to open datasource `%s'\n", pszDataSource);
 		return 0;
@@ -89,7 +89,7 @@ Vector* Vector::open(const char* pszDataSource) {
 	return new Vector(ds);
 }
 	
-Vector::Vector(OGRDataSource* ds) {
+Vector::Vector(GDALDataset* ds) {
 	poDS = ds;
 }
 
@@ -98,7 +98,7 @@ Vector::~Vector() {
 }
 
 const char* Vector::getName() {
-	return poDS->GetName();
+	return poDS->GetLayer(0)->GetName();
 }
 
 OGRLayer* Vector::getLayer(int layer_num) {
@@ -111,7 +111,7 @@ OGRLayer* Vector::getLayer(int layer_num) {
 }
 
 void Vector::report(FILE* file) {
-	fprintf(file, "%s\n", poDS->GetName());
+	fprintf(file, "%s\n", getName());
 	fprintf(file, "Layers = %d\n", poDS->GetLayerCount());
 	for( int iLayer = 0; iLayer < poDS->GetLayerCount(); iLayer++ ) {
 		OGRLayer* poLayer = poDS->GetLayer(iLayer);
@@ -143,7 +143,7 @@ void Vector::showFields(FILE* file) {
 
 Vector* Vector::create(const char* pszDataSource) {
     const char *pszDriverName = "ESRI Shapefile";
-    OGRSFDriver *poDriver = OGRSFDriverRegistrar::GetRegistrar()->GetDriverByName(
+    GDALDriver *poDriver = GetGDALDriverManager()->GetDriverByName(
                 pszDriverName 
     );
     if ( poDriver == NULL ) {
@@ -151,7 +151,7 @@ Vector* Vector::create(const char* pszDataSource) {
         return NULL;
     }
 
-    OGRDataSource *poDS = poDriver->CreateDataSource(pszDataSource, NULL);
+    GDALDataset *poDS = poDriver->Create(pszDataSource, 0, 0, 0, GDT_Unknown, NULL );
     if ( poDS == NULL ) {
         fprintf(stderr, "Creation of output file failed.\n");
         return NULL;

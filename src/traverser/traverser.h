@@ -690,6 +690,7 @@ private:
 	bool debug_dump_polys;
 	bool debug_no_spatial_filter;
 	
+        GEOSContextHandle_t geos_context;
 	WKTWriter wktWriter;
 };
 

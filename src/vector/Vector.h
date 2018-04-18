@@ -48,7 +48,7 @@ public:
 	void showFields(FILE* file);
 	
 	/** gets the OGRDataSource */
-	OGRDataSource* getDataSource(void) { return poDS; } 
+	GDALDataset* getDataSource(void) { return poDS; } 
 	
 	/** 
      * Creates a vector object representing an new datasource.
@@ -58,8 +58,8 @@ public:
 	static Vector* create(const char* filename);
 	
 private:
-	Vector(OGRDataSource* ds);
-	OGRDataSource* poDS;
+	Vector(GDALDataset* ds);
+	GDALDataset* poDS;
 };
 
 #endif
